@@ -1,5 +1,8 @@
 # H3 Risk Pipeline
 
+Last update: 03.12.21 CKS/JC
+
+
 Scripts and data related to the H3 pipeline manuscript.
 
 ## Description of files below:
