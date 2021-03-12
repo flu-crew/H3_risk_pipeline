@@ -320,20 +320,36 @@ cdata %>% ggplot(., aes(x=Strain,y=HI_to_GMT(value)#,
   scale_y_continuous(breaks=c(0:8)*2,limits=c(0,16))+
   scale_x_discrete(breaks=NULL)+
   #  ylim(0,14)+
-  labs(title="Post-exposure sera cohort - HI Titers",y="Log2 GMT",x="Strain")
+  labs(title="Post-exposure sera cohort - HI Titers",y="Log2 (GMT/10)",x="Strain")
 
   
 ggsave("Post_exposure_cohort_HI violin plots_v9.png",dpi=600,width=14,height=4.88)
 
 #Overall_post-exposure Box plots
+str(cdata)
 cdata %>% ggplot(., aes(x=Strain,y=HI_to_GMT(value),
-                        color=Strain,fill=Strain))+
+                        color=Strain))+
   geom_hline(yintercept=2,linetype="dashed",color="darkgray")+
   
-  #geom_violin(width=1,trim=FALSE)+
-  geom_boxplot(color="black",fill= "NA", width=0.25)+
+    #geom_violin(width=1,trim=FALSE)+
+  #geom_boxplot(color="black",fill= "NA", width=0.25)+ 
+  geom_boxplot(color="black",
+     aes(fill=vac) , ##remove fill
+     width=0.25) +
+  scale_fill_manual(values=c("#FFFFFF", "#969696"))+ # remove fill
   geom_jitter(color="black",width=0.05,height=0)+
+  stat_summary(fun.y="mean", color="red", size=0.3)+
+  geom_text(data = annot_df, aes(label = average, 
+                                 y=12), color="black")+
+  geom_text(data = annot_df, aes(label = paste("(",
+                                               pos,
+                                               "%)",
+                                               sep=""
+  ),
+  y=11), color="black"
+  )+                   
   theme_minimal()+
+  
   #geom_violin(trim=FALSE, fill='white', color="white")+
   facet_grid(.~Strain,switch="both",scale="free")+
   theme(strip.text.y = element_text(angle = 180),
@@ -346,9 +362,9 @@ cdata %>% ggplot(., aes(x=Strain,y=HI_to_GMT(value),
   scale_y_continuous(breaks=c(0:7)*2,limits=c(0,12))+
   scale_x_discrete(breaks=NULL)+
 #  ylim(0,14)+
-  labs(title="Post-exposure sera cohort - HI Titers",y="GMT",x="Strain")
+  labs(title="Post-exposure sera cohort - HI Titers",y="Log2 (GMT/10)",x="Strain")
 
-ggsave("Post_exposure_cohort_HI_boxplots_v8.png",dpi=600,width=12.3,height=4.88)
+ggsave("Post_exposure_cohort_HI_boxplots_v9.png",dpi=600,width=12.3,height=4.88)
 
 cdata %>% 
   mutate(
@@ -509,6 +525,7 @@ mcdata_corr <- melt(cdata_corr) %>%
 
 # Heatmap of correlation
 (p<-mcdata_corr %>% 
+    subset(!is.na(Spearman))%>% #subset extra lines in the heatmap (20..21..)
     ggplot(. , aes(x=HuVac, y=Strain, fill=Spearman))+
     geom_tile()+
     geom_text(aes(label=round(Spearman,digits=1)),size=4)+
@@ -518,7 +535,8 @@ mcdata_corr <- melt(cdata_corr) %>%
 )
 
 ggsave("Post_vac_correlation_heatmap_v9.png",plot=p,width=6, height=4)
-
+str (mcdata_corr)
+unique(mcdata_corr$Strain)
 # === end draft
 ss=mdata$Swine_Strain %>% unique(.) %>% as.character(.)
 rs=mdata$Ref_Strain %>% unique(.) %>% as.character(.)
@@ -663,7 +681,7 @@ annot_df <- input %>%
     )+ 
     facet_grid(.~Swine_Strain,switch="both",scale="free")+
     theme_minimal()+
-    labs(title="HI Titers by strain",x="",y="Log2 GMT",fill="Decade",color="Decade")+
+    labs(title="HI Titers by strain",x="",y="Log2 (GMT/10)",fill="Decade",color="Decade")+
     theme(strip.text.y = element_text(angle = 180),
           panel.border = element_rect(colour = "black",fill=NA),
           legend.position = "none",
@@ -693,20 +711,40 @@ annot_df <- input %>%
 )
 
 #Overall_PostVacc_ boxplots
-input %>%
-  ggplot(.,aes(x=factor(Swine_Strain),y=log(Swine_Titor/10,2),color=factor(Swine_Strain),fill=factor(Swine_Strain))) +
+annot_df <- input %>%
+  group_by(Swine_Strain) %>%
+  summarise(
+    average = round(mean (Swine_Titor)),
+    pos = round(sum(HI_to_GMT(Swine_Titor) >= 2)/40*100)
+  ) 
+(pvacbox=input %>%
+  #subset(!is.na())
+  ggplot(.,aes(x=factor(Swine_Strain),y=log(Swine_Titor/10,2),color=factor(Swine_Strain))) +
   geom_hline(yintercept=2,linetype="dashed",color="darkgray")+
   #geom_violin(trim=FALSE,width=1)+
-  geom_boxplot(color="black",fill= NA, width=0.25)+
+  geom_boxplot(color="black",aes (fill= vac2), width=0.25)+
+  scale_fill_manual(values=c("HuVac"="#969696","Strain"="#FFFFFF"))+
+  stat_summary(fun.y="mean", color="red", size=0.3)+
+  geom_text(data = annot_df, aes(label = average, 
+                                 y=8), color="black")+
+  geom_text(data = annot_df, aes(label = paste("(",
+                                               pos,
+                                               "%)",
+                                               sep=""
+  ),
+  y=7.5), color="black"
+  )+                   
+  
+  
   geom_jitter(color="black",width=0.1,height=0)+
   facet_grid(.~Swine_Strain,switch="both",scale="free")+
   theme_minimal()+
-  labs(title="HI Titers by Antigen",x="",y="GMT",fill="Decade",color="Decade")+
+  labs(title="HI Titers by Antigen",x="",y="Log2 (GMT/10)",fill="Decade",color="Decade")+
   theme(strip.text.y = element_text(angle = 180),
         panel.border = element_rect(colour = "black",fill=NA),
         legend.position = "none"
   ) +
-  scale_x_discrete(breaks=NULL)+ylim(c(0,8))
+  scale_x_discrete(breaks=NULL)+ylim(c(0,8)))
 ggsave("Post_vac_titersall_huvac_boxplots.png",dpi=300,width=12,height=4.88)
 
 input %>% subset(.,grepl("HuVac",Swine_Strain)) %>%
@@ -780,7 +818,7 @@ ggsave("Post_vac_titersbydecade_swine.png",dpi=300,width=16,height=4.88)
   theme_minimal()+
   scale_color_manual(values=c("1940s and 50s"="#c6dbef","1960s"="#9ecae1","1970s"="#6baed6","1980s"="#3182bd","1990s"="#08519c"))+
   scale_fill_manual(values=c("1940s and 50s"="#c6dbef","1960s"="#9ecae1","1970s"="#6baed6","1980s"="#3182bd","1990s"="#08519c"))+
-  labs(title="HI titers by decade of birth",x="",y="Log2 GMT",fill="Decade of birth",color="Decade of birth")+
+  labs(title="HI titers by decade of birth",x="",y="Log2 (GMT/10)",fill="Decade of birth",color="Decade of birth")+
   theme(strip.text.y = element_text(angle = 180),
         panel.border = element_rect(colour = "black",fill=NA),
         legend.position = "bottom"
@@ -816,18 +854,19 @@ library(cowplot)
 #plot_grid(p_all, p_decade_box, labels = c('A', 'B'), label_size = 12, ncol=1, rel_heights = c(1.5,3))
 #ggsave("Post_vac_cowplot_boxplot.png",dpi=300,width=8.4,height=8)
 
-plot_grid(p_all_box, p_decade_box, labels = c('A', 'B'), label_size = 10, ncol=1, rel_heights = c(1.5,3))
-ggsave("Post_vac_cowplot_boxplot_v9.png",dpi=300,width=9.0,height=12)
+plot_grid(pvacbox, p_decade_box, labels = c('A', 'B'), label_size = 10, ncol=1, rel_heights = c(1.5,3))
+ggsave("Post_vac_cowplot_boxplot_v9.png",dpi=300,width=10,height=12)
 
 #plot_grid(p_all, p_decade_violinbox, labels = c('A', 'B'), label_size = 12, ncol=1, rel_heights = c(1.5,3))
 #ggsave("Post_vac_cowplot_violinbox.png",dpi=300,width=8.4,height=8)
 
 plot_grid(p_all2, p_birth, labels = c('A', 'B'), label_size = 14, ncol=1, rel_heights = c(4,9))
-ggsave("Post_vac_cowplot_violinbox_v9.png",dpi=300,width=11.29,height=12)
+ggsave("Post_vac_cowplot_violinbox_v9.png",dpi=300,width=11,height=12)
 #?plot_grid
 par("din")
 #ggsave("Post_vac_titersbydecade_both.png",dpi=300)
 #ggsave("Post_vac_titersbydecade_both.png",dpi=300,width=7,height=9)
+
 
 low_responders= input %>% subset(Swine_Strain=="HK14.HuVac" & Swine_Titor<=160) %>% {.$Study_ID}
 #med_responders= input %>% subset(Swine_Strain=="HK14.HuVac" & Swine_Titor>=160 & Swine_Titor <=320) %>% {.$Study_ID}
