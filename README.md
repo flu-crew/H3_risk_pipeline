@@ -13,6 +13,7 @@ Human-to-swine transmission of influenza A virus (IAV) repeatedly occurs, period
 |:--|:--|
 | phylogeny-figure | Files and data for phylogenetic analyses |
 | figures | folder containing all generated figures |
+| supplementary-data | folder containing HI data for the post exposure and post vaccination cohort |
 
 
-View all figures at [this link](imgs/README.md)
+
